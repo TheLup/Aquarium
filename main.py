@@ -8,7 +8,7 @@ import pyfirmata
 
 #addresses for DS18B20
 temp1_file = '/sys/bus/w1/devices/28-000006afaa0b/w1_slave'
-temp2_file = '/sys/bus/w1/devices/28-000006b07178/w1_slave'
+#temp2_file = '/sys/bus/w1/devices/28-000006b07178/w1_slave'
 
 #Slave addresses
 board = pyfirmata.Arduino('/dev/ttyUSB0')
