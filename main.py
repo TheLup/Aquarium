@@ -12,22 +12,24 @@ temp1_file = '/sys/bus/w1/devices/28-000006afaa0b/w1_slave'
 
 #Slave addresses
 board = pyfirmata.Arduino('/dev/ttyUSB0')
-#digital write
+#digital write pwm(0~1)
 pin_Heater = board.get_pin('d:2:o')
 pin_CO2 = board.get_pin('d:3:o')
 pin_AirPump = board.get_pin('d:4:o')
-#pwm write 0~1
 pin_fan = board.get_pin('d:5:p')
+#pin_Fertil_1 = board.get_pin('d:6:o')
+#pin_Fertil_2 = board.get_pin('d:7:o')
+#pin_Fertil_3 = board.get_pin('d:8:o')
 pin_LED = board.get_pin('d:9:p')
+#ex)pin2.write(1)
 
-#pin2.write(1)
 
-q = Queue(20)
+q = Queue()
 lock = Lock()
 rlock = RLock()
 
 #Initialize Arduino
-print 'Initialize Arduino'
+#print 'Initialize Arduino'
 
 
 
@@ -61,13 +63,11 @@ def savedQueue(q, delay):
     while True:
         if not q.empty():
             output = q.get()
-            print 
+
             if output.getMode() == 'on':
                 print output.getName() + ' is on'
-                sleep(delay)
             elif output.getMode() == 'off':
                 print output.getName() + ' is off'
-                sleep(delay)
 		
             if output.getCode() == 1:
                 pin_fan.write(0.5)
@@ -101,7 +101,11 @@ def savedQueue(q, delay):
                 jud_AirPump = 0
 
 
-queue_thread = MyProcess(savedQueue, (q, 3), savedQueue.__name__)
+
+queue_process = MyProcess(savedQueue, (q, 3), savedQueue.__name__)
+
+
+
 
 def temp(temp_file, delay, queue):
     global jud_Fan
@@ -124,10 +128,9 @@ def temp(temp_file, delay, queue):
         sleep(delay)
 			
 
+#temp_process = MyProcess(temp, (temp1_file, 0.5, q), temp.__name__)
 
-temp_thread = MyProcess(temp, (temp1_file, 0.5, q), temp.__name__)
-
-def light(delay, queue):
+def judge(delay, queue):
 
     c_time = f_time = time.localtime()
 
@@ -153,7 +156,17 @@ def light(delay, queue):
         sleep(delay)
         f_time = time.localtime()
 
-light_thread = MyProcess(light, (1, q), light.__name__)
+def temp_judge_Th(temp_file, tDelay, jDelay, queue):
+    thTemp = MyThread(temp, (temp_file, tDelay, queue, temp.__name__))
+    thJudge = MyThread(judge, (jDelay, queue), judge.__name__)
+    
+    thTemp.start()
+    thJudge.start()
+    
+    thTemp.join()
+    thTemp.join()
+
+judge_process = MyProcess(temp_judge_Th, (temp_file, 1, 1, q), temp_judge_Th.__name__)
 
 def info(delay, queue):
     global jud_Fan
@@ -170,7 +183,7 @@ def info(delay, queue):
         print 'AirPump: ', jud_AirPump
         sleep(delay)
 
-info_thread = MyProcess(info,(1, q), info.__name__)
+#info_process = MyProcess(info,(1, q), info.__name__)
 
 jud_Fan = 0
 jud_Heater = 0
@@ -181,13 +194,13 @@ jud_AirPump = 0
 c_time = time.localtime()
 
 try:
-    temp_thread.start()
-    queue_thread.start()
-    light_thread.start()
+#    temp_process.start()
+    queue_process.start()
+    judge_process.start()
 
-    temp_thread.join()
-    queue_thread.join()
-    light_thread.join()
+#    temp_process.join()
+    queue_process.join()
+    judge_process.join()
 
 except KeyboardInterrupt:
     pin_fan.write(0)
@@ -195,4 +208,8 @@ except KeyboardInterrupt:
     pin_LED.write(0)
     pin_CO2.write(1)
     pin_AirPump.write(1)
+    pin_Fertil_1.write(0)
+    pin_Fertil_2.write(0)
+    pin_Fertil_3.write(0)
+
 
