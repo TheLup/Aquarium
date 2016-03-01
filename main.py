@@ -157,7 +157,7 @@ def judge(delay, queue):
         f_time = time.localtime()
 
 def temp_judge_Th(temp_file, tDelay, jDelay, queue):
-    thTemp = MyThread(temp, (temp_file, tDelay, queue, temp.__name__))
+    thTemp = MyThread(temp, (temp_file, tDelay, queue), temp.__name__)
     thJudge = MyThread(judge, (jDelay, queue), judge.__name__)
     
     thTemp.start()
@@ -166,7 +166,7 @@ def temp_judge_Th(temp_file, tDelay, jDelay, queue):
     thTemp.join()
     thTemp.join()
 
-judge_process = MyProcess(temp_judge_Th, (temp_file, 1, 1, q), temp_judge_Th.__name__)
+judge_process = MyProcess(temp_judge_Th, (temp1_file, 1, 1, q), temp_judge_Th.__name__)
 
 def info(delay, queue):
     global jud_Fan
@@ -194,22 +194,22 @@ jud_AirPump = 0
 c_time = time.localtime()
 
 try:
-#    temp_process.start()
     queue_process.start()
     judge_process.start()
 
-#    temp_process.join()
     queue_process.join()
     judge_process.join()
 
 except KeyboardInterrupt:
+    judge_process.terminate()
+    queue_process.terminate()
     pin_fan.write(0)
     pin_Heater.write(1)
     pin_LED.write(0)
     pin_CO2.write(1)
     pin_AirPump.write(1)
-    pin_Fertil_1.write(0)
-    pin_Fertil_2.write(0)
-    pin_Fertil_3.write(0)
+#    pin_Fertil_1.write(0)
+#    pin_Fertil_2.write(0)
+#    pin_Fertil_3.write(0)
 
 
