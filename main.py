@@ -12,6 +12,7 @@ temp1_file = '/sys/bus/w1/devices/28-000006afaa0b/w1_slave'
 
 #Slave addresses
 board = pyfirmata.Arduino('/dev/ttyUSB0')
+
 #digital write pwm(0~1)
 pin_Heater = board.get_pin('d:2:o')
 pin_CO2 = board.get_pin('d:3:o')
@@ -32,6 +33,11 @@ rlock = RLock()
 #print 'Initialize Arduino'
 
 
+jud_Fan = 0
+jud_Heater = 0
+jud_LED = 0
+jud_CO2 = 0
+jud_AirPump = 0
 
 class Mode():
     def __init__(self, name, mode, code):
@@ -102,10 +108,6 @@ def savedQueue(q, delay):
 
 
 
-queue_process = MyProcess(savedQueue, (q, 3), savedQueue.__name__)
-
-
-
 
 def temp(temp_file, delay, queue):
     global jud_Fan
@@ -128,9 +130,12 @@ def temp(temp_file, delay, queue):
         sleep(delay)
 			
 
-#temp_process = MyProcess(temp, (temp1_file, 0.5, q), temp.__name__)
 
 def judge(delay, queue):
+
+    global jud_LED
+    global jud_CO2
+    global jud_AirPump
 
     c_time = f_time = time.localtime()
 
@@ -157,7 +162,7 @@ def judge(delay, queue):
         f_time = time.localtime()
 
 def temp_judge_Th(temp_file, tDelay, jDelay, queue):
-    thTemp = MyThread(temp, (temp_file, tDelay, queue), temp.__name__)
+    thTemp = MyThread(temp, (temp1_file, tDelay, queue), temp.__name__)
     thJudge = MyThread(judge, (jDelay, queue), judge.__name__)
     
     thTemp.start()
@@ -166,30 +171,12 @@ def temp_judge_Th(temp_file, tDelay, jDelay, queue):
     thTemp.join()
     thTemp.join()
 
+
+
+queue_process = MyProcess(savedQueue, (q, 3), savedQueue.__name__)
 judge_process = MyProcess(temp_judge_Th, (temp1_file, 1, 1, q), temp_judge_Th.__name__)
 
-def info(delay, queue):
-    global jud_Fan
-    global jud_Heater
-    global jud_LED
-    global jud_CO2
-    global jud_AirPump
 
-    while True:
-        print 'Fan: ', jud_Fan
-        print 'Heater: ', jud_Heater
-        print 'LED: ', jud_LED
-        print 'CO2: ', jud_CO2
-        print 'AirPump: ', jud_AirPump
-        sleep(delay)
-
-#info_process = MyProcess(info,(1, q), info.__name__)
-
-jud_Fan = 0
-jud_Heater = 0
-jud_LED = 0
-jud_CO2 = 0
-jud_AirPump = 0
 
 c_time = time.localtime()
 
