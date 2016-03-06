@@ -77,34 +77,54 @@ def savedQueue(q, delay):
 		
             if output.getCode() == 1:
                 pin_fan.write(0.5)
+                lock.acquire()
                 jud_Fan = 1
+                lock.release()
             elif output.getCode() == 11:
                 pin_fan.write(0)
+                lock.acquire()
                 jud_Fan = 0
+                lock.release()
             elif output.getCode() == 2:
                 pin_Heater.write(0)
+                lock.acquire()
                 jud_Heater = 1
+                lock.release()
             elif output.getCode() == 12:
                 pin_Heater.write(1)
+                lock.acquire()
                 jud_Heater = 0
+                lock.release()
             elif output.getCode() == 3:
                 pin_LED.write(1)
+                lock.acquire()
                 jud_LED = 1
+                lock.release()
             elif output.getCode() == 13:
                 pin_LED.write(0)
+                lock.acquire()
                 jud_LED = 0
+                lock.release()
             elif output.getCode() == 4:
                 pin_CO2.write(0)
+                lock.acquire()
                 jud_CO2 = 1
+                lock.release()
             elif output.getCode() == 14:
                 pin_CO2.write(1)
+                lock.acquire()
                 jud_CO2 = 0
+                lock.release()
             elif output.getCode() == 5:
                 pin_AirPump.write(0)
+                lock.acquire()
                 jud_AirPump = 1
+                lock.release()
             elif output.getCode() == 15:
                 pin_AirPump.write(1)
+                lock.acquire()
                 jud_AirPump = 0
+                lock.release()
 
 
 
@@ -118,6 +138,7 @@ def temp(temp_file, delay, queue):
         print ctemp
 
         if ctemp >= 26.0 and jud_Fan == 0:
+            print 'jud_Fan: ', jud_Fan
             queue.put(Mode('Fan', 'on', 1), 1)
         elif ctemp <= 25.7 and jud_Fan == 1:
             queue.put(Mode('Fan', 'off', 11), 1)
@@ -155,6 +176,7 @@ def judge(delay, queue):
         
             if (c_time[3] < 6 or c_time[3] >= 15) and jud_AirPump == 0:
                 queue.put(Mode('AirPump', 'on', 5), 1)
+                print jud_AirPump
             elif c_time[3] >= 6 and c_time[3] < 15 and jud_AirPump == 1:
                 queue.put(Mode('AirPump', 'off', 15), 1)
         
