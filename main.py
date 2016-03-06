@@ -1,9 +1,8 @@
 from myThread import MyThread
 from MultiProcess import MyProcess
-from multiprocessing import Queue, Lock, RLock
+from multiprocessing import Queue, Lock, RLock, Value, Array
 from DS18B20 import read_temp
-from time import sleep
-import time
+from time import sleep, localtime
 import pyfirmata
 
 #addresses for DS18B20
@@ -39,6 +38,9 @@ jud_LED = 0
 jud_CO2 = 0
 jud_AirPump = 0
 
+# [fan, heater, led, co2, airpump]
+judArr = Array('i', [0, 0, 0 ,0 ,0])
+
 class Mode():
     def __init__(self, name, mode, code):
         self.name = name
@@ -59,12 +61,7 @@ class Mode():
         return self.code
 
 		
-def savedQueue(q, delay):
-    global jud_Fan
-    global jud_Heater
-    global jud_LED
-    global jud_CO2
-    global jud_AirPump
+def savedQueue(q, arr):
 
     while True:
         if not q.empty():
@@ -78,114 +75,107 @@ def savedQueue(q, delay):
             if output.getCode() == 1:
                 pin_fan.write(0.5)
                 lock.acquire()
-                jud_Fan = 1
+                arr[0] = 1
                 lock.release()
             elif output.getCode() == 11:
                 pin_fan.write(0)
                 lock.acquire()
-                jud_Fan = 0
+                arr[0] = 0
                 lock.release()
             elif output.getCode() == 2:
                 pin_Heater.write(0)
                 lock.acquire()
-                jud_Heater = 1
+                arr[1] = 1
                 lock.release()
             elif output.getCode() == 12:
                 pin_Heater.write(1)
                 lock.acquire()
-                jud_Heater = 0
+                arr[1] = 0
                 lock.release()
             elif output.getCode() == 3:
                 pin_LED.write(1)
                 lock.acquire()
-                jud_LED = 1
+                arr[2] = 1
                 lock.release()
             elif output.getCode() == 13:
                 pin_LED.write(0)
                 lock.acquire()
-                jud_LED = 0
+                arr[2] = 0
                 lock.release()
             elif output.getCode() == 4:
                 pin_CO2.write(0)
                 lock.acquire()
-                jud_CO2 = 1
+                arr[3] = 1
                 lock.release()
             elif output.getCode() == 14:
                 pin_CO2.write(1)
                 lock.acquire()
-                jud_CO2 = 0
+                arr[3] = 0
                 lock.release()
             elif output.getCode() == 5:
                 pin_AirPump.write(0)
                 lock.acquire()
-                jud_AirPump = 1
+                arr[4] = 1
                 lock.release()
             elif output.getCode() == 15:
                 pin_AirPump.write(1)
                 lock.acquire()
-                jud_AirPump = 0
+                arr[4] = 0
                 lock.release()
 
 
 
 
-def temp(temp_file, delay, queue):
-    global jud_Fan
-    global jud_Heater
+def temp(temp_file, delay, queue, arr):
 
     while True:
         ctemp = read_temp(temp_file)
         print ctemp
 
-        if ctemp >= 26.0 and jud_Fan == 0:
-            print 'jud_Fan: ', jud_Fan
+        if ctemp >= 26.0 and arr[0] == 0:
             queue.put(Mode('Fan', 'on', 1), 1)
-        elif ctemp <= 25.7 and jud_Fan == 1:
+        elif ctemp <= 25.7 and arr[0] == 1:
             queue.put(Mode('Fan', 'off', 11), 1)
 			
-        if ctemp <= 22.7 and jud_Heater == 0:
+        if ctemp <= 22.7 and arr[1] == 0:
             queue.put(Mode('Heater', 'on', 2), 1)
-        elif ctemp >=23.1 and jud_Heater == 1:
+        elif ctemp >=23.1 and arr[1] == 1:
             queue.put(Mode('Heater', 'off', 12), 1)
         
         sleep(delay)
 			
 
 
-def judge(delay, queue):
+def judge(delay, queue, arr):
 
-    global jud_LED
-    global jud_CO2
-    global jud_AirPump
-
-    c_time = f_time = time.localtime()
+    c_time = f_time = localtime()
 
     while True:
         if c_time[5] != f_time[5]:
             c_time = f_time
 
-            if c_time[3] >= 7 and c_time[3] < 15 and jud_LED == 0:
+            if c_time[3] >= 7 and c_time[3] < 15 and arr[2] == 0:
                 queue.put(Mode('LED', 'on', 3), 1)
-            elif (c_time[3] < 7 or c_time[3] >= 15) and jud_LED == 1:
+            elif (c_time[3] < 7 or c_time[3] >= 15) and arr[2] == 1:
                 queue.put(Mode('LED', 'off', 13), 1)
 
-            if c_time[3] >= 6 and c_time[3] < 14 and jud_CO2 == 0:
+            if c_time[3] >= 6 and c_time[3] < 14 and arr[3] == 0:
                 queue.put(Mode('CO2', 'on', 4), 1)
-            elif (c_time[3] < 6 or c_time[3] >= 14) and jud_CO2 == 1:
+            elif (c_time[3] < 6 or c_time[3] >= 14) and arr[3] == 1:
                 queue.put(Mode('CO2', 'off', 14), 1)
         
-            if (c_time[3] < 6 or c_time[3] >= 15) and jud_AirPump == 0:
+            if (c_time[3] < 6 or c_time[3] >= 15) and arr[4] == 0:
                 queue.put(Mode('AirPump', 'on', 5), 1)
                 print jud_AirPump
-            elif c_time[3] >= 6 and c_time[3] < 15 and jud_AirPump == 1:
+            elif c_time[3] >= 6 and c_time[3] < 15 and arr[4] == 1:
                 queue.put(Mode('AirPump', 'off', 15), 1)
         
         sleep(delay)
-        f_time = time.localtime()
+        f_time = localtime()
 
-def temp_judge_Th(temp_file, tDelay, jDelay, queue):
-    thTemp = MyThread(temp, (temp1_file, tDelay, queue), temp.__name__)
-    thJudge = MyThread(judge, (jDelay, queue), judge.__name__)
+def temp_judge_Th(temp_file, tDelay, jDelay, queue, arr):
+    thTemp = MyThread(temp, (temp1_file, tDelay, queue, arr))
+    thJudge = MyThread(judge, (jDelay, queue, arr))
     
     thTemp.start()
     thJudge.start()
@@ -195,8 +185,8 @@ def temp_judge_Th(temp_file, tDelay, jDelay, queue):
 
 
 
-queue_process = MyProcess(savedQueue, (q, 3), savedQueue.__name__)
-judge_process = MyProcess(temp_judge_Th, (temp1_file, 1, 1, q), temp_judge_Th.__name__)
+queue_process = MyProcess(savedQueue, (q, judArr))
+judge_process = MyProcess(temp_judge_Th, (temp1_file, 1, 1, q, judArr))
 
 
 
