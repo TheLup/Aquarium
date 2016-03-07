@@ -10,7 +10,7 @@ import pyfirmata
 temp1_file = '/sys/bus/w1/devices/28-000006afaa0b/w1_slave'
 #temp2_file = '/sys/bus/w1/devices/28-000006b07178/w1_slave'
 
-#Slave addresses
+#Arduino USB port
 board = pyfirmata.Arduino('/dev/ttyUSB0')
 
 #digital write pwm(0~1)
@@ -18,9 +18,9 @@ pin_Heater = board.get_pin('d:2:o')
 pin_CO2 = board.get_pin('d:3:o')
 pin_AirPump = board.get_pin('d:4:o')
 pin_fan = board.get_pin('d:5:p')
-#pin_Fertil_1 = board.get_pin('d:6:o')
-#pin_Fertil_2 = board.get_pin('d:7:o')
-#pin_Fertil_3 = board.get_pin('d:8:o')
+pin_Fertil_1 = board.get_pin('d:6:o')
+pin_Fertil_2 = board.get_pin('d:7:o')
+pin_Fertil_3 = board.get_pin('d:8:o')
 pin_LED = board.get_pin('d:9:p')
 #ex)pin2.write(1)
 
@@ -36,15 +36,11 @@ thRLock = tRLock()
 #print 'Initialize Arduino'
 
 
-jud_Fan = 0
-jud_Heater = 0
-jud_LED = 0
-jud_CO2 = 0
-jud_AirPump = 0
 
-# [fan, heater, led, co2, airpump]
-judArr = Array('i', [0, 0, 0 ,0 ,0])
-masterArr = Array('i', [0, 0, 0 ,0 ,0])
+# [fan, heater, led, co2, airpump, fer1, fer2, fer3]
+judArr = Array('i', [0, 0, 0 ,0 ,0, 0, 0, 0])
+masterArr = Array('i', [0, 0, 0 ,0 ,0, 0, 0, 0])
+
 
 class Mode():
     def __init__(self, name, mode, code):
@@ -65,10 +61,55 @@ class Mode():
     def getCode(self):
         return self.code
 
-def thFirtilizer(num):
-    if num == 
 
 
+
+
+
+#fertilizer
+def fertilizer(num, delay, arr):
+    if num == 1:
+        pin_Fertil_1.write(1)
+	lock.acquire()
+        arr[5] = 1
+	lock.release()
+	sleep(delay)
+        pin_Fertil_1.write(0)
+	lock.acquire()
+	arr[5] = 0
+	lock.release()
+    elif num == 2:
+        pin_Fertil_1.write(1)
+	lock.acquire()
+        arr[6] = 1
+	lock.release()
+	sleep(delay)
+        pin_Fertil_1.write(0)
+	lock.acquire()
+	arr[6] = 0
+	lock.release()
+    elif num == 3:
+        pin_Fertil_1.write(1)
+	lock.acquire()
+        arr[6] = 1
+	lock.release()
+	sleep(delay)
+        pin_Fertil_1.write(0)
+	lock.acquire()
+	arr[6] = 0
+	lock.release()
+ 
+
+ def thFertilizer(num, delay, arr):
+     fer = MyThread(fertilizer, (num, delay, arr))
+     fer.start()
+     fer.join()
+
+
+
+
+
+#queue
 def setCurrentMode(arr, element, mode):
     lock.acquire()
     arr[element] = mode
@@ -116,6 +157,13 @@ def savedQueue(q, arr):
             elif output.getCode() == 15:
                 pin_AirPump.write(1)
 		setCurrentMode(arr, 4, 0)
+	    elif output.getCode() == 6:
+	        thFertilizer(1, 10, arr)
+	    elif output.getCode() == 7:
+	        thFertilizer(2, 10, arr)
+	    elif output.getCode() == 8:
+	        thFertilizer(3, 10, arr)
+
 
 
 
