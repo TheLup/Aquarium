@@ -166,7 +166,6 @@ def judge(delay, queue, arr):
         
             if (c_time[3] < 6 or c_time[3] >= 15) and arr[4] == 0:
                 queue.put(Mode('AirPump', 'on', 5), 1)
-                print jud_AirPump
             elif c_time[3] >= 6 and c_time[3] < 15 and arr[4] == 1:
                 queue.put(Mode('AirPump', 'off', 15), 1)
         
@@ -190,7 +189,6 @@ judge_process = MyProcess(temp_judge_Th, (temp1_file, 1, 1, q, judArr))
 
 
 
-c_time = time.localtime()
 
 try:
     queue_process.start()
