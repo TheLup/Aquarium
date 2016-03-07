@@ -40,6 +40,7 @@ jud_AirPump = 0
 
 # [fan, heater, led, co2, airpump]
 judArr = Array('i', [0, 0, 0 ,0 ,0])
+masterArr = Array('i', [0, 0, 0 ,0 ,0])
 
 class Mode():
     def __init__(self, name, mode, code):
@@ -124,29 +125,47 @@ def savedQueue(q, arr):
                 lock.release()
 
 
+def enter(mArr):
+    i = 0
+    while True:
+	t = raw_input('Enter a mode you want to change: ')
+
+	if t == :
+	    mArr[i] = t
+	else:
+	    continue
+
+	i += 1
 
 
-def temp(temp_file, delay, queue, arr):
+
+
+
+def temp(temp_file, delay, queue, arr, mArr):
 
     while True:
         ctemp = read_temp(temp_file)
         print ctemp
 
-        if ctemp >= 26.0 and arr[0] == 0:
-            queue.put(Mode('Fan', 'on', 1), 1)
-        elif ctemp <= 25.7 and arr[0] == 1:
-            queue.put(Mode('Fan', 'off', 11), 1)
+        if arr[0] == 0:
+            if (mArr[0] = 0 and ctemp >= 26.0) or mArr[0] == 1:
+                queue.put(Mode('Fan', 'on', 1), 1)
+        elif arr[0] == 1:
+            if (mArr[0] = 0 and ctemp < 25.7) or mArr[0] == -1:
+                queue.put(Mode('Fan', 'off', 11), 1)
 			
-        if ctemp <= 22.7 and arr[1] == 0:
-            queue.put(Mode('Heater', 'on', 2), 1)
-        elif ctemp >=23.1 and arr[1] == 1:
-            queue.put(Mode('Heater', 'off', 12), 1)
+        if arr[1] == 0:
+            if (mArr[1] = 0 and ctemp < 22.7) or mArr[1] == 1:
+                queue.put(Mode('Heater', 'on', 2), 1)
+        elif arr[1] == 1:
+            if (mArr[1] = 0 and ctemp >=23.0) or mArr[1] == -1:
+                queue.put(Mode('Heater', 'off', 12), 1)
         
         sleep(delay)
 			
 
 
-def judge(delay, queue, arr):
+def judge(delay, queue, arr, mArr):
 
     c_time = f_time = localtime()
 
@@ -154,28 +173,34 @@ def judge(delay, queue, arr):
         if c_time[5] != f_time[5]:
             c_time = f_time
 
-            if c_time[3] >= 7 and c_time[3] < 15 and arr[2] == 0:
-                queue.put(Mode('LED', 'on', 3), 1)
-            elif (c_time[3] < 7 or c_time[3] >= 15) and arr[2] == 1:
-                queue.put(Mode('LED', 'off', 13), 1)
+            if arr[2] == 0:
+                if (c_time[3] >= 7 and c_time[3] < 15 and mArr[2] == 0) or mArr[2] == 1:
+                    queue.put(Mode('LED', 'on', 3), 1)
+            elif arr[2] == 1:
+                if ((c_time[3] < 7 or c_time[3] >= 15) and mArr[2] == 0) or mArr[2] == -1: 
+                    queue.put(Mode('LED', 'off', 13), 1)
 
-            if c_time[3] >= 6 and c_time[3] < 14 and arr[3] == 0:
+            if arr[3] == 0:
+                if (c_time[3] >= 6 and c_time[3] < 14 and mArr[3] == 0) or mArr[3] == 1:
                 queue.put(Mode('CO2', 'on', 4), 1)
-            elif (c_time[3] < 6 or c_time[3] >= 14) and arr[3] == 1:
-                queue.put(Mode('CO2', 'off', 14), 1)
+            elif arr[3] == 1:
+                if ((c_time[3] < 6 or c_time[3] >= 14) and mArr[3] == 0) or mArr[3] == -1:
+                    queue.put(Mode('CO2', 'off', 14), 1)
         
-            if (c_time[3] < 6 or c_time[3] >= 15) and arr[4] == 0:
-                queue.put(Mode('AirPump', 'on', 5), 1)
-                print jud_AirPump
-            elif c_time[3] >= 6 and c_time[3] < 15 and arr[4] == 1:
-                queue.put(Mode('AirPump', 'off', 15), 1)
+            if arr[4] == 0:
+                if ((c_time[3] < 6 or c_time[3] >= 15) and mArr[4] == 0) or arr[4] == 1:
+                    queue.put(Mode('AirPump', 'on', 5), 1)
+            elif arr[4] == 1:
+                if (c_time[3] >= 6 and c_time[3] < 15 and mArr[4] == 0) or mArr[4] == -1:
+                    queue.put(Mode('AirPump', 'off', 15), 1)
         
         sleep(delay)
         f_time = localtime()
 
-def temp_judge_Th(temp_file, tDelay, jDelay, queue, arr):
-    thTemp = MyThread(temp, (temp1_file, tDelay, queue, arr))
-    thJudge = MyThread(judge, (jDelay, queue, arr))
+def temp_judge_Th(temp_file, tDelay, jDelay, queue, arr, mArr):
+
+    thTemp = MyThread(temp, (temp1_file, tDelay, queue, arr, mArr))
+    thJudge = MyThread(judge, (jDelay, queue, arr, mArr))
     
     thTemp.start()
     thJudge.start()
@@ -186,11 +211,12 @@ def temp_judge_Th(temp_file, tDelay, jDelay, queue, arr):
 
 
 queue_process = MyProcess(savedQueue, (q, judArr))
-judge_process = MyProcess(temp_judge_Th, (temp1_file, 1, 1, q, judArr))
+judge_process = MyProcess(temp_judge_Th, (temp1_file, 1, 1, q, judArr, masterArr))
 
 
 
-c_time = time.localtime()
+
+
 
 try:
     queue_process.start()
