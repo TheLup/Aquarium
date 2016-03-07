@@ -1,6 +1,7 @@
 from myThread import MyThread
 from MultiProcess import MyProcess
 from multiprocessing import Queue, Lock, RLock, Value, Array
+from threading import Lock, RLock as tLock, tRLock
 from DS18B20 import read_temp
 from time import sleep, localtime
 import pyfirmata
@@ -27,6 +28,9 @@ pin_LED = board.get_pin('d:9:p')
 q = Queue()
 lock = Lock()
 rlock = RLock()
+thLock = tLock()
+thRLock = tRLock()
+
 
 #Initialize Arduino
 #print 'Initialize Arduino'
@@ -61,6 +65,15 @@ class Mode():
     def getCode(self):
         return self.code
 
+def thFirtilizer(num):
+    if num == 
+
+
+def setCurrentMode(arr, element, mode):
+    lock.acquire()
+    arr[element] = mode
+    lock.release()
+
 		
 def savedQueue(q, arr):
 
@@ -75,67 +88,106 @@ def savedQueue(q, arr):
 		
             if output.getCode() == 1:
                 pin_fan.write(0.5)
-                lock.acquire()
-                arr[0] = 1
-                lock.release()
+		setCurrentMode(arr, 0, 1)
             elif output.getCode() == 11:
                 pin_fan.write(0)
-                lock.acquire()
-                arr[0] = 0
-                lock.release()
+		setCurrentMode(arr, 0, 0)
             elif output.getCode() == 2:
                 pin_Heater.write(0)
-                lock.acquire()
-                arr[1] = 1
-                lock.release()
+		setCurrentMode(arr, 1, 1)
             elif output.getCode() == 12:
                 pin_Heater.write(1)
-                lock.acquire()
-                arr[1] = 0
-                lock.release()
+		setCurrentMode(arr, 1, 0)
             elif output.getCode() == 3:
-                pin_LED.write(1)
-                lock.acquire()
-                arr[2] = 1
-                lock.release()
-            elif output.getCode() == 13:
                 pin_LED.write(0)
-                lock.acquire()
-                arr[2] = 0
-                lock.release()
+		setCurrentMode(arr, 2, 1)
+            elif output.getCode() == 13:
+                pin_LED.write(1)
+		setCurrentMode(arr, 2, 0)
             elif output.getCode() == 4:
                 pin_CO2.write(0)
-                lock.acquire()
-                arr[3] = 1
-                lock.release()
+		setCurrentMode(arr, 3, 1)
             elif output.getCode() == 14:
                 pin_CO2.write(1)
-                lock.acquire()
-                arr[3] = 0
-                lock.release()
+		setCurrentMode(arr, 3, 0)
             elif output.getCode() == 5:
                 pin_AirPump.write(0)
-                lock.acquire()
-                arr[4] = 1
-                lock.release()
+		setCurrentMode(arr, 4, 1)
             elif output.getCode() == 15:
                 pin_AirPump.write(1)
-                lock.acquire()
-                arr[4] = 0
-                lock.release()
+		setCurrentMode(arr, 4, 0)
 
 
-def enter(mArr):
+
+#stand by
+def input_mode():
+    m = input('Enter a mode: ')
+    if m == 0:
+        print 'The mode will change to auto'
+	return m
+    elif m == 1:
+        print 'The mode will change to on'
+	return m
+    elif m == -1:
+        print 'The mode will change to off'
+        return m
+    else :
+        print 'Wrong mode.' 
+	print 'Enter again from the beginning.'
+	print 'This mode will change auto mode.'
+	return 0
+
+
+
+def standby(mArr):
     i = 0
     while True:
 	t = raw_input('Enter a mode you want to change: ')
 
-	if t == :
-	    mArr[i] = t
-	else:
-	    continue
+	if t == 'fan':
+	    lock.acquire()
+	    mArr[0] = input_mode()
+	    lock.release()
+	elif t == 'heater':
+	    lock.acquire()
+	    mArr[1] = input_mode()
+	    lock.release()
+	elif t == 'led':
+	    lock.acquire()
+	    mArr[2] = input_mode()
+	    lock.release()
+	elif t == 'co2':
+	    lock.acquire()
+	    mArr[3] = input_mode()
+	    lock.release()
+	elif t == 'airpump':
+	    lock.acquire()
+	    mArr[4] = input_mode()
+	    lock.release()
 
-	i += 1
+
+
+
+
+
+
+
+
+def queue_standby_Th(q, judArr, masterArr):
+
+    thQueue = MyThread(savedQueue, (q, judArr))
+    thStandby = MyThread(standby, masterArr)
+    
+    thQueue.start()
+    thStandby.start()
+    
+    thQueue.join()
+    thStandby.join()
+
+
+
+
+
 
 
 
@@ -210,7 +262,7 @@ def temp_judge_Th(temp_file, tDelay, jDelay, queue, arr, mArr):
 
 
 
-queue_process = MyProcess(savedQueue, (q, judArr))
+queue_process = MyProcess(queue_standby_Th, (q, judArr, masterArr))
 judge_process = MyProcess(temp_judge_Th, (temp1_file, 1, 1, q, judArr, masterArr))
 
 
@@ -230,7 +282,7 @@ except KeyboardInterrupt:
     queue_process.terminate()
     pin_fan.write(0)
     pin_Heater.write(1)
-    pin_LED.write(0)
+    pin_LED.write(1)
     pin_CO2.write(1)
     pin_AirPump.write(1)
 #    pin_Fertil_1.write(0)
