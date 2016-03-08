@@ -291,7 +291,28 @@ def judge(delay, queue, arr, mArr):
             elif arr[4] == 1:
                 if (c_time[3] >= 6 and c_time[3] < 15 and mArr[4] == 0) or mArr[4] == -1:
                     queue.put(Mode('AirPump', 'off', 15), 1)
-        
+            
+            if arr[5] == 0:
+                if ((c_time[3] == 6 and c_time[4] == 50 and c_time[5] == 0) and (c_time[6] == 0 or c_time[6] == 2 or c_time[6] == 4))or mArr[5] == 1:
+                    queue.put(Mode('Fertilizer1', 'on', 6), 1)
+            elif arr[6] == 1:
+                if mArr[6] == -1:
+                    queue.put(Mode('Fertilizer1', 'off', 7, 1)
+
+            if arr[6] == 0:
+                if ((c_time[3] == 6 and c_time[4] == 50 and c_time[5] == 0) and (c_time[6] == 1 or c_time[6] == 3 or c_time[6] == 5))or mArr[6] == 1:
+                    queue.put(Mode('Fertilizer1', 'on', 7), 1)
+            elif arr[6] == 1:
+                if mArr[6] == -1:
+                    queue.put(Mode('Fertilizer1', 'off', 7, 1)
+
+            if arr[7] == 0:
+                if ((c_time[3] == 6 and c_time[4] == 50 and c_time[5] == 0) and (c_time[6] == 1 or c_time[6] == 3 or c_time[6] == 5))or mArr[7] == 1:
+                    queue.put(Mode('Fertilizer1', 'on', 7), 1)
+            elif arr[7] == 1:
+                if mArr[6] == -1:
+                    queue.put(Mode('Fertilizer1', 'off', 7, 1)
+
         sleep(delay)
         f_time = localtime()
 
